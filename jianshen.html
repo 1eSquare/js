@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>💪 健身日记</title>
+<style>
+:root {
+  --pink: #f9a8d4; --pink-bg: #fce7f3; --pink-light: #f9a8d422;
+  --blue: #7dd3fc; --blue-bg: #e0f2fe; --blue-light: #7dd3fc22;
+  --purple: #a855f7; --purple2: #ec4899;
+  --bg: #fdf6ff; --card: #fff; --border: #ede9fe;
+  --text: #333; --soft: #888; --faint: #bbb;
+  --r: 18px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body { background: var(--bg); font-family: -apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif; color: var(--text); overflow-x: hidden; }
+button { font-family: inherit; cursor: pointer; }
+input  { font-family: inherit; }
+input:focus { outline: none; border-color: var(--purple) !important; box-shadow: 0 0 0 3px rgba(168,85,247,.13); }
+::-webkit-scrollbar { display: none; }
+
+/* ── layout ── */
+#app { max-width: 480px; margin: 0 auto; min-height: 100vh;
+background: radial-gradient(ellipse at 15% 10%,#f3e8ff 0%,transparent 50%),
+radial-gradient(ellipse at 85% 90%,#fce7f3 0%,transparent 50%), var(–bg); }
+
+/* ── header ── */
+#header { display:flex; align-items:center; justify-content:space-between;
+padding:14px 16px 10px; position:sticky; top:0; z-index:50;
+background:rgba(253,246,255,.93); backdrop-filter:blur(14px);
+border-bottom:1px solid var(–border); }
+#app-title { font-weight:900; font-size:1.1rem;
+background:linear-gradient(135deg,#a855f7,#ec4899);
+-webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+#saving-dot { font-size:8px; color:var(–purple); animation:pulse 1s infinite; display:none; }
+#user-switch { display:flex; background:#f3f0ff; border-radius:50px; padding:3px; gap:2px; }
+.user-btn { padding:6px 11px; border-radius:50px; border:none; font-size:.78rem;
+transition:all .2s; background:transparent; color:#aaa; font-weight:500; }
+
+/* ── nav ── */
+#nav { display:flex; gap:6px; padding:10px 14px; position:sticky; top:55px; z-index:49;
+background:rgba(253,246,255,.93); backdrop-filter:blur(14px); overflow-x:auto; }
+.tab-btn { padding:7px 14px; border-radius:50px; border:2px solid #eee; font-size:.78rem;
+background:transparent; color:#999; font-weight:500; white-space:nowrap; transition:all .2s; }
+
+/* ── pages ── */
+#main { padding:12px 14px 110px; }
+.page { display:none; animation:slideUp .3s ease; }
+.page.active { display:block; }
+@keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+/* ── card ── */
+.card { background:var(–card); border-radius:var(–r); padding:18px; margin-bottom:12px;
+box-shadow:0 2px 16px rgba(168,85,247,.07); border:1px solid var(–border); }
+.card-title { font-weight:800; font-size:.93rem; margin-bottom:13px; }
+
+/* ── stat bubbles ── */
+.bubbles { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-bottom:12px; }
+.bubble { border-radius:16px; padding:12px 6px; text-align:center; }
+.bubble .val { font-weight:900; font-size:18px; }
+.bubble .lbl { font-size:10px; color:var(–soft); margin-top:2px; }
+
+/* ── quick btns ── */
+.qbtns { display:flex; gap:8px; flex-wrap:wrap; }
+.qbtn { border:none; border-radius:12px; padding:10px 13px; font-weight:700; font-size:13px; }
+
+/* ── workout card ── */
+.wo-card { background:var(–card); border-radius:var(–r); padding:14px 16px; margin-bottom:10px;
+border:1px solid var(–border); box-shadow:0 2px 12px rgba(168,85,247,.06); }
+.wo-head { display:flex; justify-content:space-between; align-items:flex-start; }
+.wo-type { font-weight:800; font-size:15px; }
+.wo-date { color:var(–faint); font-size:12px; margin-top:2px; }
+.wo-actions { display:flex; gap:8px; align-items:center; }
+.wo-tags { display:flex; gap:7px; margin-top:10px; flex-wrap:wrap; }
+.tag { border-radius:99px; padding:3px 10px; font-size:12px; font-weight:700; }
+.wo-note { margin-top:9px; font-size:13px; color:var(–soft); font-style:italic; }
+.like-btn { background:none; border:none; font-size:14px; }
+.del-btn  { background:none; border:none; color:var(–faint); font-size:20px; line-height:1; }
+
+/* ── goal row ── */
+.goal-row { display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+.chk { width:22px; height:22px; border-radius:6px; border:2px solid; background:transparent;
+color:#fff; font-size:12px; font-weight:900; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.goal-txt { flex:1; font-size:14px; }
+
+/* ── cheer item ── */
+.cheer-item { display:flex; gap:12px; align-items:center; padding:10px 0; border-top:1px solid #f5f0ff; }
+.cheer-emoji { font-size:24px; }
+.cheer-msg   { font-weight:700; font-size:14px; }
+.cheer-date  { color:var(–faint); font-size:11px; margin-top:2px; }
+
+/* ── empty ── */
+.empty { text-align:center; padding:52px 20px; color:var(–faint); }
+.empty .ei { font-size:52px; margin-bottom:14px; }
+.empty .et { font-size:14px; }
+
+/* ── bar chart ── */
+.bars { display:flex; gap:16px; align-items:flex-end; justify-content:center; }
+.bar-wrap { flex:1; text-align:center; }
+.bar-area { height:140px; display:flex; align-items:flex-end; justify-content:center; }
+.bar { width:50px; border-radius:8px 8px 0 0; transition:height .7s; }
+.bar-avatar { font-size:20px; margin-top:4px; }
+.bar-name  { font-size:12px; font-weight:700; margin-top:2px; }
+.bar-count { font-size:22px; font-weight:900; }
+
+/* ── week dots ── */
+.week-row { display:flex; gap:4px; justify-content:space-between; }
+.week-col { text-align:center; flex:1; }
+.week-label { font-size:10px; color:var(–faint); margin-bottom:5px; }
+.dot { width:22px; height:22px; border-radius:50%; margin:0 auto; }
+.dot+.dot { margin-top:3px; }
+.legend-row { display:flex; gap:16px; margin-top:12px; }
+.legend { display:flex; align-items:center; gap:6px; font-size:12px; }
+.legend-dot { width:12px; height:12px; border-radius:50%; }
+
+/* ── progress bars ── */
+.pbar-row { margin-bottom:10px; }
+.pbar-head { display:flex; justify-content:space-between; font-size:13px; margin-bottom:3px; }
+.pbar-track { height:7px; border-radius:99px; background:#f0f0f0; }
+.pbar-fill  { height:7px; border-radius:99px; transition:width .7s; }
+
+/* ── weight chart ── */
+.wchart-wrap { overflow-x:auto; }
+
+/* ── fab ── */
+#fab { position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+border:none; border-radius:50px; padding:14px 28px; color:#fff;
+font-weight:800; font-size:.95rem;
+background:linear-gradient(135deg,var(–pink),#f9a8d4aa);
+box-shadow:0 4px 20px rgba(168,85,247,.28); z-index:100; display:none; }
+
+/* ── modal overlay ── */
+#overlay { position:fixed; inset:0; background:rgba(0,0,0,.42); z-index:200;
+display:none; align-items:flex-end; justify-content:center; }
+#overlay.open { display:flex; }
+#modal { background:#fff; border-radius:24px 24px 0 0; padding:22px 20px 44px;
+width:100%; max-width:480px; max-height:88vh; overflow-y:auto;
+animation:slideUp .25s ease; }
+.modal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.modal-title { font-weight:900; font-size:16px; }
+.close-btn { background:#f5f5f5; border:none; border-radius:50%; width:30px; height:30px;
+font-size:18px; display:flex; align-items:center; justify-content:center; }
+
+/* ── form ── */
+.fg { margin-bottom:14px; }
+.lbl { display:block; font-size:11px; font-weight:700; color:var(–faint);
+margin-bottom:6px; text-transform:uppercase; letter-spacing:.06em; }
+.inp { width:100%; border:2px solid var(–border); border-radius:12px;
+padding:11px 14px; font-size:15px; background:#fafafa; }
+.inp-big { font-size:28px; text-align:center; font-weight:900; }
+.type-btns { display:flex; flex-wrap:wrap; gap:6px; }
+.type-btn { border:none; border-radius:20px; padding:7px 12px; font-size:13px; font-weight:600; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.emoji-btns { display:flex; gap:8px; flex-wrap:wrap; }
+.emoji-btn  { font-size:26px; border-radius:12px; padding:7px 9px; border:2px solid #eee; background:transparent; }
+.save-btn { width:100%; border:none; border-radius:14px; padding:14px; font-size:15px;
+font-weight:800; color:#fff; margin-top:8px;
+background:linear-gradient(135deg,var(–purple),var(–purple2)); }
+
+/* ── setup ── */
+.setup-section { background:#fafafa; border-radius:16px; padding:14px; margin-bottom:12px; }
+.setup-head { font-weight:800; margin-bottom:10px; }
+.avatar-btns { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+.avatar-btn  { font-size:22px; border-radius:10px; padding:6px 8px; border:2px solid #eee; background:transparent; }
+</style>
+
+</head>
+<body>
+<div id="app">
+  <header id="header">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="app-title">💪 健身日记</span>
+      <span id="saving-dot">●</span>
+    </div>
+    <div id="user-switch">
+      <button class="user-btn" data-u="A" onclick="switchUser('A')">🐻 TA</button>
+      <button class="user-btn" data-u="B" onclick="switchUser('B')">🐰 我</button>
+    </div>
+  </header>
+
+  <nav id="nav">
+    <button class="tab-btn" data-tab="home"    onclick="switchTab('home')">🏠 首页</button>
+    <button class="tab-btn" data-tab="log"     onclick="switchTab('log')">📝 记录</button>
+    <button class="tab-btn" data-tab="partner" onclick="switchTab('partner')">👀 TA的</button>
+    <button class="tab-btn" data-tab="stats"   onclick="switchTab('stats')">📊 统计</button>
+  </nav>
+
+  <main id="main">
+    <div id="page-home"    class="page"></div>
+    <div id="page-log"     class="page"></div>
+    <div id="page-partner" class="page"></div>
+    <div id="page-stats"   class="page"></div>
+  </main>
+
+<button id="fab" onclick="openModal('workout')">+ 记录训练</button>
+
+</div>
+
+<!-- Modal -->
+
+<div id="overlay" onclick="if(event.target===this)closeModal()">
+  <div id="modal"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+const LS_KEY = 'couple_fitness_v3';
+let state, me = 'B', tab = 'home';
+
+function loadState() {
+  try { state = JSON.parse(localStorage.getItem(LS_KEY)); } catch {}
+  if (!state) state = emptyState();
+}
+function saveState() {
+  localStorage.setItem(LS_KEY, JSON.stringify(state));
+  flash();
+}
+function emptyState() {
+  return {
+    users: {
+      A: { name:'TA',  avatar:'🐻', color:'#7dd3fc', bg:'#e0f2fe' },
+      B: { name:'我',  avatar:'🐰', color:'#f9a8d4', bg:'#fce7f3' }
+    },
+    workouts:[], weights:[], goals:[], cheers:[]
+  };
+}
+
+let flashTO;
+function flash() {
+  const d = document.getElementById('saving-dot');
+  d.style.display = 'inline';
+  clearTimeout(flashTO);
+  flashTO = setTimeout(() => d.style.display = 'none', 1200);
+}
+
+const uid   = () => Math.random().toString(36).slice(2,9);
+const today = () => new Date().toISOString().slice(0,10);
+const fmtD  = d => { const [,m,day]=d.split('-'); return m+'/'+day; };
+const esc   = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+const WO_TYPES     = ['力量训练','有氧','瑜伽','跑步','骑车','游泳','其他'];
+const CHEER_EMOJIS = ['🔥','💪','❤️','⭐','🎉','👏','🥰','💫'];
+const AVATARS      = ['🐻','🐰','🐼','🦊','🐸','🐯','🦁','🐺','🐨','🦋'];
+
+// ══════════════════════════════════════════════
+//  ROUTING
+// ══════════════════════════════════════════════
+function switchUser(u) {
+  me = u;
+  renderAll();
+}
+function switchTab(t) {
+  tab = t;
+  renderAll();
+}
+function renderAll() {
+  const mi = state.users[me];
+  const other = me==='A'?'B':'A';
+  const oi = state.users[other];
+
+  // user switch buttons
+  document.querySelectorAll('.user-btn').forEach(b => {
+    const u = b.dataset.u;
+    const c = state.users[u].color;
+    b.textContent = state.users[u].avatar + ' ' + state.users[u].name;
+    b.style.background = me===u ? c : 'transparent';
+    b.style.color = me===u ? '#fff' : '#aaa';
+    b.style.fontWeight = me===u ? '800' : '500';
+  });
+
+  // tab buttons
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const active = b.dataset.tab === tab;
+    b.style.background = active ? mi.color : 'transparent';
+    b.style.color = active ? '#fff' : '#999';
+    b.style.borderColor = active ? mi.color : '#eee';
+    b.style.fontWeight = active ? '800' : '500';
+  });
+
+  // pages
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pg = document.getElementById('page-'+tab);
+  if (pg) {
+    pg.classList.add('active');
+    // force re-animation
+    pg.style.animation = 'none';
+    pg.offsetHeight;
+    pg.style.animation = '';
+  }
+
+  // fab
+  const fab = document.getElementById('fab');
+  fab.style.display = tab==='log' ? 'block' : 'none';
+  fab.style.background = `linear-gradient(135deg,${mi.color},${mi.color}aa)`;
+
+  // render current page
+  if (tab==='home')    renderHome(mi, oi, other);
+  if (tab==='log')     renderLog(mi);
+  if (tab==='partner') renderPartner(oi, mi, other);
+  if (tab==='stats')   renderStats(mi, oi, other);
+}
+
+// ══════════════════════════════════════════════
+//  HOME
+// ══════════════════════════════════════════════
+function renderHome(mi, oi, other) {
+  const myWO   = state.workouts.filter(w => w.user===me);
+  const streak = calcStreak(myWO);
+  const lastWt = state.weights.filter(w => w.user===me)[0];
+  const goals  = state.goals.filter(g => g.user===me);
+  const cheers = state.cheers.filter(c => c.to===me).slice(0,3);
+
+  let html = `
+  <div class="card" style="background:linear-gradient(135deg,${mi.bg},#fff)">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span style="font-size:50px;line-height:1">${mi.avatar}</span>
+      <div style="flex:1">
+        <div style="font-size:20px;font-weight:900;color:#333">嗨，${esc(mi.name)}！</div>
+        <div style="color:#aaa;font-size:12px;margin-top:3px">${today()} · 今天也要加油 💫</div>
+      </div>
+      <button onclick="openModal('setup')" style="background:none;border:none;font-size:20px;opacity:.55">⚙️</button>
+    </div>
+  </div>
+
+  <div class="bubbles">
+    ${bubble(streak+'天','连续打卡',mi.color)}
+    ${bubble(myWO.length+'次','总训练',mi.color)}
+    ${bubble(lastWt?lastWt.weight+'kg':'--','当前体重',mi.color)}
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚡ 快速记录</div>
+    <div class="qbtns">
+      <button class="qbtn" style="background:${mi.color}22;color:${mi.color}" onclick="openModal('workout')">📝 训练</button>
+      <button class="qbtn" style="background:${mi.color}22;color:${mi.color}" onclick="openModal('weight')">⚖️ 体重</button>
+      <button class="qbtn" style="background:${mi.color}22;color:${mi.color}" onclick="openModal('goal')">🎯 目标</button>
+      <button class="qbtn" style="background:${oi.color}22;color:${oi.color}" onclick="openModal('cheer')">💌 鼓励TA</button>
+    </div>
+  </div>`;
+
+  if (cheers.length) {
+    html += `<div class="card" style="border-left:4px solid ${mi.color}">
+      <div class="card-title">💌 ${esc(oi.name)}给你的鼓励</div>`;
+    cheers.forEach(c => {
+      html += `<div class="cheer-item">
+        <span class="cheer-emoji">${c.emoji}</span>
+        <div><div class="cheer-msg">${esc(c.msg)}</div><div class="cheer-date">${fmtD(c.date)}</div></div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (goals.length) {
+    html += `<div class="card"><div class="card-title">🎯 我的目标</div>`;
+    goals.forEach(g => {
+      html += `<div class="goal-row">
+        <button class="chk" style="border-color:${mi.color};background:${g.done?mi.color:'transparent'}"
+          onclick="toggleGoal('${g.id}')">${g.done?'✓':''}</button>
+        <span class="goal-txt" style="text-decoration:${g.done?'line-through':'none'};color:${g.done?'#ccc':'#333'}">${esc(g.text)}</span>
+        <button class="del-btn" onclick="deleteGoal('${g.id}')">×</button>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  document.getElementById('page-home').innerHTML = html;
+}
+
+// ══════════════════════════════════════════════
+//  LOG
+// ══════════════════════════════════════════════
+function renderLog(mi) {
+  const myWO = state.workouts.filter(w => w.user===me);
+  let html = `<div class="card" style="background:${mi.bg}">
+    <div style="font-weight:900;margin-bottom:2px">我的训练记录</div>
+    <div style="color:var(--soft);font-size:13px">共 ${myWO.length} 次记录</div>
+  </div>`;
+  if (!myWO.length) {
+    html += empty('🏋️','还没有训练记录，快去打卡吧！');
+  } else {
+    myWO.forEach(w => { html += woCard(w, mi.color, true, false, '', ''); });
+  }
+  document.getElementById('page-log').innerHTML = html;
+}
+
+// ══════════════════════════════════════════════
+//  PARTNER
+// ══════════════════════════════════════════════
+function renderPartner(oi, mi, other) {
+  const theirWO    = state.workouts.filter(w => w.user===other);
+  const theirGoals = state.goals.filter(g => g.user===other);
+  const theirWt    = state.weights.filter(w => w.user===other)[0];
+
+  let html = `<div class="card" style="background:linear-gradient(135deg,${oi.bg},#fff)">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:44px">${oi.avatar}</span>
+      <div>
+        <div style="font-weight:900;font-size:18px">${esc(oi.name)} 的健身动态</div>
+        <div style="color:#aaa;font-size:13px">共 ${theirWO.length} 次训练</div>
+      </div>
+    </div>
+    <div class="bubbles" style="margin-top:14px;margin-bottom:0">
+      ${bubble(theirWO.length+'次','训练次数',oi.color)}
+      ${bubble(theirWt?theirWt.weight+'kg':'--','当前体重',oi.color)}
+    </div>
+  </div>`;
+
+  if (theirGoals.length) {
+    html += `<div class="card"><div class="card-title">${esc(oi.name)}的目标 🎯</div>`;
+    theirGoals.forEach(g => {
+      html += `<div class="goal-row">
+        <span style="font-size:16px">${g.done?'✅':'⭕'}</span>
+        <span class="goal-txt" style="text-decoration:${g.done?'line-through':'none'};color:${g.done?'#ccc':'#333'}">${esc(g.text)}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (!theirWO.length) {
+    html += empty('👀', esc(oi.name)+'还没有训练记录哦');
+  } else {
+    theirWO.forEach(w => { html += woCard(w, oi.color, false, true, me, mi.color); });
+  }
+  document.getElementById('page-partner').innerHTML = html;
+}
+
+// ══════════════════════════════════════════════
+//  STATS
+// ══════════════════════════════════════════════
+function renderStats(mi, oi, other) {
+  const myW   = state.workouts.filter(w => w.user===me);
+  const theirW= state.workouts.filter(w => w.user===other);
+  const myWts = state.weights.filter(w => w.user===me).slice(0,7).reverse();
+  const maxWO = Math.max(myW.length, theirW.length, 1);
+  const types = {};
+  myW.forEach(w => { types[w.type]=(types[w.type]||0)+1; });
+
+  const last7 = Array.from({length:7},(_,i)=>{
+    const d=new Date(); d.setDate(d.getDate()-(6-i)); return d.toISOString().slice(0,10);
+  });
+
+  let html = `
+  <div class="card">
+    <div class="card-title">📊 训练对比</div>
+    <div class="bars">
+      ${cbar(mi.name, mi.avatar, myW.length, mi.color, maxWO)}
+      <div style="color:#ddd;font-size:22px;padding-bottom:12px;font-weight:900">VS</div>
+      ${cbar(oi.name, oi.avatar, theirW.length, oi.color, maxWO)}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🗓️ 最近7天打卡</div>
+    <div class="week-row">`;
+  last7.forEach(d => {
+    const a=myW.some(w=>w.date===d), b=theirW.some(w=>w.date===d);
+    html += `<div class="week-col">
+      <div class="week-label">${fmtD(d)}</div>
+      <div class="dot" style="background:${a?mi.color:'#f0f0f0'}"></div>
+      <div class="dot" style="background:${b?oi.color:'#f0f0f0'}"></div>
+    </div>`;
+  });
+  html += `</div>
+    <div class="legend-row">
+      <div class="legend"><div class="legend-dot" style="background:${mi.color}"></div>${esc(mi.name)}</div>
+      <div class="legend"><div class="legend-dot" style="background:${oi.color}"></div>${esc(oi.name)}</div>
+    </div>
+  </div>`;
+
+  const tEntries = Object.entries(types).sort((a,b)=>b[1]-a[1]);
+  if (tEntries.length) {
+    html += `<div class="card"><div class="card-title">${esc(mi.name)}的训练偏好 🏅</div>`;
+    tEntries.forEach(([t,n]) => {
+      html += `<div class="pbar-row">
+        <div class="pbar-head"><span>${t}</span><span style="font-weight:700;color:${mi.color}">${n}次</span></div>
+        <div class="pbar-track"><div class="pbar-fill" style="width:${n/myW.length*100}%;background:${mi.color}"></div></div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (myWts.length > 1) {
+    html += `<div class="card"><div class="card-title">${esc(mi.name)}的体重趋势 ⚖️</div>${wChart(myWts,mi.color)}</div>`;
+  }
+
+  document.getElementById('page-stats').innerHTML = html;
+}
+
+// ══════════════════════════════════════════════
+//  HTML HELPERS
+// ══════════════════════════════════════════════
+function bubble(val, lbl, color) {
+  return `<div class="bubble" style="background:${color}22">
+    <div class="val" style="color:${color}">${val}</div>
+    <div class="lbl">${lbl}</div>
+  </div>`;
+}
+
+function woCard(w, color, canDelete, canLike, liker, likeColor) {
+  const liked = canLike && w.likes && w.likes.includes(liker);
+  let acts = '';
+  if (canLike) acts += `<button class="like-btn" onclick="toggleLike('${w.id}','${liker}')" style="color:${liked?likeColor:'#ccc'};font-weight:${liked?900:400}">${liked?'❤️':'🤍'} ${w.likes?w.likes.length:0}</button>`;
+  if (canDelete) acts += `<button class="del-btn" onclick="deleteWO('${w.id}')">×</button>`;
+
+  let tags = '';
+  if (w.sets)      tags += `<span class="tag" style="background:${color}1e;color:${color}">${esc(w.sets)} 组</span>`;
+  if (w.reps)      tags += `<span class="tag" style="background:${color}1e;color:${color}">${esc(w.reps)} 次/组</span>`;
+  if (w.weight_kg) tags += `<span class="tag" style="background:${color}1e;color:${color}">${esc(w.weight_kg)} kg</span>`;
+  if (w.duration)  tags += `<span class="tag" style="background:${color}1e;color:${color}">${esc(w.duration)} 分钟</span>`;
+
+  return `<div class="wo-card" style="border-left:4px solid ${color};border-left-color:${color}">
+    <div class="wo-head">
+      <div><div class="wo-type">${esc(w.type)}</div><div class="wo-date">${fmtD(w.date)}</div></div>
+      <div class="wo-actions">${acts}</div>
+    </div>
+    ${tags?`<div class="wo-tags">${tags}</div>`:''}
+    ${w.note?`<div class="wo-note">"${esc(w.note)}"</div>`:''}
+  </div>`;
+}
+
+function cbar(name, avatar, count, color, max) {
+  const h = max>0 ? Math.max(count/max*120, count>0?18:4) : 4;
+  return `<div class="bar-wrap">
+    <div class="bar-area"><div class="bar" style="height:${h}px;background:${color}"></div></div>
+    <div class="bar-avatar">${avatar}</div>
+    <div class="bar-name">${esc(name)}</div>
+    <div class="bar-count" style="color:${color}">${count}</div>
+  </div>`;
+}
+
+function empty(emoji, text) {
+  return `<div class="empty"><div class="ei">${emoji}</div><div class="et">${text}</div></div>`;
+}
+
+function wChart(weights, color) {
+  const vals = weights.map(w=>w.weight);
+  const mn=Math.min(...vals)-1, mx=Math.max(...vals)+1;
+  const W=300,H=80;
+  const pts = vals.map((v,i) => ({
+    x: i/(vals.length-1)*(W-24)+12,
+    y: H-((v-mn)/(mx-mn))*(H-20)-10
+  }));
+  const path = pts.map((p,i)=>(i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+  let circles = pts.map((p,i)=>
+    `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="${color}"/>
+     <text x="${p.x.toFixed(1)}" y="${H+20}" text-anchor="middle" fill="#bbb" font-size="10">${fmtD(weights[i].date)}</text>`
+  ).join('');
+  return `<div class="wchart-wrap"><svg width="${W}" height="${H+24}" style="display:block;overflow:visible">
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${circles}
+  </svg></div>`;
+}
+
+// ══════════════════════════════════════════════
+//  ACTIONS
+// ══════════════════════════════════════════════
+function toggleGoal(id) {
+  const g = state.goals.find(x=>x.id===id);
+  if (g) { g.done=!g.done; saveState(); renderAll(); }
+}
+function deleteGoal(id) {
+  state.goals = state.goals.filter(x=>x.id!==id);
+  saveState(); renderAll();
+}
+function deleteWO(id) {
+  state.workouts = state.workouts.filter(x=>x.id!==id);
+  saveState(); renderAll();
+}
+function toggleLike(id, liker) {
+  const w = state.workouts.find(x=>x.id===id);
+  if (!w) return;
+  if (!w.likes) w.likes=[];
+  if (w.likes.includes(liker)) w.likes=w.likes.filter(l=>l!==liker);
+  else w.likes.push(liker);
+  saveState(); renderAll();
+}
+
+// ══════════════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════════════
+let currentModal = null;
+
+function openModal(type) {
+  currentModal = type;
+  const modal = document.getElementById('modal');
+  const overlay = document.getElementById('overlay');
+
+  if (type==='workout') modal.innerHTML = buildWorkoutModal();
+  if (type==='weight')  modal.innerHTML = buildWeightModal();
+  if (type==='goal')    modal.innerHTML = buildGoalModal();
+  if (type==='cheer')   modal.innerHTML = buildCheerModal();
+  if (type==='setup')   modal.innerHTML = buildSetupModal();
+
+  overlay.classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  currentModal = null;
+}
+
+function mHead(title) {
+  return `<div class="modal-head">
+    <div class="modal-title">${title}</div>
+    <button class="close-btn" onclick="closeModal()">×</button>
+  </div>`;
+}
+
+// ── Workout modal ──
+let _wotype = WO_TYPES[0];
+function buildWorkoutModal() {
+  const typeBtns = WO_TYPES.map(t =>
+    `<button class="type-btn" id="wt_${t}" onclick="selectWOType('${t}')"
+      style="background:${_wotype===t?'#a855f7':'#f5f5f5'};color:${_wotype===t?'#fff':'#555'}">${t}</button>`
+  ).join('');
+  return mHead('📝 记录训练') + `
+  <div class="fg"><label class="lbl">训练类型</label><div class="type-btns">${typeBtns}</div></div>
+  <div class="form-grid">
+    <div class="fg"><label class="lbl">组数</label><input class="inp" type="number" id="wo_sets" placeholder="如：4"></div>
+    <div class="fg"><label class="lbl">每组次数</label><input class="inp" type="number" id="wo_reps" placeholder="如：12"></div>
+    <div class="fg"><label class="lbl">重量(kg)</label><input class="inp" type="number" id="wo_wkg" placeholder="如：60"></div>
+    <div class="fg"><label class="lbl">时长(分钟)</label><input class="inp" type="number" id="wo_dur" placeholder="如：45"></div>
+  </div>
+  <div class="fg"><label class="lbl">备注</label><input class="inp" id="wo_note" placeholder="今天感觉怎么样？"></div>
+  <button class="save-btn" onclick="saveWorkout()">保存记录 ✓</button>`;
+}
+function selectWOType(t) {
+  _wotype = t;
+  WO_TYPES.forEach(x => {
+    const b = document.getElementById('wt_'+x);
+    if (!b) return;
+    b.style.background = x===t?'#a855f7':'#f5f5f5';
+    b.style.color = x===t?'#fff':'#555';
+  });
+}
+function saveWorkout() {
+  const w = {
+    id: uid(), user: me, date: today(), likes: [],
+    type: _wotype,
+    sets: document.getElementById('wo_sets').value,
+    reps: document.getElementById('wo_reps').value,
+    weight_kg: document.getElementById('wo_wkg').value,
+    duration: document.getElementById('wo_dur').value,
+    note: document.getElementById('wo_note').value
+  };
+  state.workouts.unshift(w);
+  saveState(); closeModal(); renderAll();
+}
+
+// ── Weight modal ──
+function buildWeightModal() {
+  return mHead('⚖️ 记录体重') + `
+  <div class="fg"><label class="lbl">今日体重 (kg)</label>
+    <input class="inp inp-big" type="number" step="0.1" id="wt_val" placeholder="65.5"></div>
+  <button class="save-btn" onclick="saveWeight()">保存 ✓</button>`;
+}
+function saveWeight() {
+  const v = parseFloat(document.getElementById('wt_val').value);
+  if (!v) return;
+  state.weights.unshift({id:uid(),user:me,date:today(),weight:v});
+  saveState(); closeModal(); renderAll();
+}
+
+// ── Goal modal ──
+function buildGoalModal() {
+  return mHead('🎯 添加目标') + `
+  <div class="fg"><label class="lbl">目标内容</label>
+    <input class="inp" id="goal_txt" placeholder="如：每周锻炼3次"></div>
+  <button class="save-btn" onclick="saveGoal()">添加 ✓</button>`;
+}
+function saveGoal() {
+  const t = document.getElementById('goal_txt').value.trim();
+  if (!t) return;
+  state.goals.unshift({id:uid(),user:me,text:t,done:false});
+  saveState(); closeModal(); renderAll();
+}
+
+// ── Cheer modal ──
+let _cheerEmoji = CHEER_EMOJIS[0];
+function buildCheerModal() {
+  const other = me==='A'?'B':'A';
+  const oi = state.users[other];
+  const emojiBtns = CHEER_EMOJIS.map(e =>
+    `<button class="emoji-btn" id="ce_${e}" onclick="selectCheerEmoji('${e}')"
+      style="background:${_cheerEmoji===e?'#f0e6ff':'transparent'};border-color:${_cheerEmoji===e?'#a855f7':'#eee'}">${e}</button>`
+  ).join('');
+  return mHead('💌 给 '+esc(oi.name)+' 送鼓励') + `
+  <div class="fg"><label class="lbl">选个表情</label><div class="emoji-btns">${emojiBtns}</div></div>
+  <div class="fg"><label class="lbl">鼓励的话</label>
+    <input class="inp" id="cheer_msg" placeholder="你真棒！继续加油！"></div>
+  <button class="save-btn" onclick="saveCheer()">发送 💌</button>`;
+}
+function selectCheerEmoji(e) {
+  _cheerEmoji = e;
+  CHEER_EMOJIS.forEach(x => {
+    const b = document.getElementById('ce_'+x);
+    if (!b) return;
+    b.style.background = x===e?'#f0e6ff':'transparent';
+    b.style.borderColor = x===e?'#a855f7':'#eee';
+  });
+}
+function saveCheer() {
+  const msg = document.getElementById('cheer_msg').value.trim();
+  if (!msg) return;
+  const other = me==='A'?'B':'A';
+  state.cheers.unshift({id:uid(),from:me,to:other,date:today(),emoji:_cheerEmoji,msg});
+  saveState(); closeModal(); renderAll();
+}
+
+// ── Setup modal ──
+function buildSetupModal() {
+  let html = mHead('⚙️ 设置昵称 & 头像');
+  ['A','B'].forEach(u => {
+    const uc = state.users[u];
+    const avatarBtns = AVATARS.map(a =>
+      `<button class="avatar-btn" onclick="selectAvatar('${u}','${a}')" id="av_${u}_${a}"
+        style="background:${uc.avatar===a?'#f0e6ff':'transparent'};border-color:${uc.avatar===a?'#a855f7':'#eee'}">${a}</button>`
+    ).join('');
+    html += `<div class="setup-section">
+      <div class="setup-head" style="color:${uc.color}">${u==='A'?'💙 蓝方':'💗 粉方'}</div>
+      <div class="fg"><label class="lbl">昵称</label>
+        <input class="inp" id="name_${u}" value="${esc(uc.name)}"></div>
+      <div class="fg"><label class="lbl">头像</label><div class="avatar-btns">${avatarBtns}</div></div>
+    </div>`;
+  });
+  html += `<button class="save-btn" onclick="saveSetup()">保存设置 ✓</button>`;
+  return html;
+}
+function selectAvatar(u, a) {
+  state.users[u].avatar = a;
+  AVATARS.forEach(x => {
+    const b = document.getElementById(`av_${u}_${x}`);
+    if (!b) return;
+    b.style.background = x===a?'#f0e6ff':'transparent';
+    b.style.borderColor = x===a?'#a855f7':'#eee';
+  });
+}
+function saveSetup() {
+  ['A','B'].forEach(u => {
+    const n = document.getElementById('name_'+u).value.trim();
+    if (n) state.users[u].name = n;
+  });
+  saveState(); closeModal(); renderAll();
+}
+
+// ══════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════
+function calcStreak(workouts) {
+  if (!workouts.length) return 0;
+  const dates = [...new Set(workouts.map(w=>w.date))].sort().reverse();
+  let streak=0, cur=new Date(); cur.setHours(0,0,0,0);
+  for (const d of dates) {
+    const dd = new Date(d+'T00:00:00');
+    const diff = Math.round((cur-dd)/86400000);
+    if (diff===0||diff===1){streak++;cur=dd;}else break;
+  }
+  return streak;
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+loadState();
+renderAll();
+</script>
+
+</body>
+</html>
